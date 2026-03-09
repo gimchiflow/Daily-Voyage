@@ -1,0 +1,42 @@
+name: Deploy My Voyage
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: cd web && npm install
+
+      - name: Build web app
+        run: cd web && npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Copy built app to docs
+        run: |
+          rm -rf docs/app
+          cp -r web/dist docs/app
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
